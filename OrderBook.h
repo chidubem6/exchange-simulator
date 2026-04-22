@@ -16,8 +16,20 @@ class OrderBook {
         std::unordered_map<int, std::pair<std::string, Side>> orderIndex; // orderId -> (symbol, side)
 
     public:
+
+        // Order management
         void addOrder(const Order& order);
-        void cancelOrder(int orderId, std::string& outSymbol);
+        bool cancelOrder(int orderId, std::string& outSymbol);
+        void display(const std::string& symbol) const;
+        void displayAll() const;
+
+        // Best bid/ask retrieval and removal
+        Order* bestBid(const std::string& symbol);
+        Order* bestAsk(const std::string& symbol);
+        void removeTopBid(const std::string& symbol);
+        void removeTopAsk(const std::string& symbol);
+
+        std::vector<std::string> getSymbols() const;
 };
 
 
