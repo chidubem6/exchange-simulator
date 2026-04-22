@@ -3,70 +3,43 @@
 #include <iomanip>
 
 void OrderBook::addOrder(const Order& order) {
-    auto& symbol = books[order.symbol];
+    auto& symbolBook = books[order.symbol];
 
-    // Queue the order at its price level on the correct side
+    // Append to the correct side's price level and store a direct iterator into
+    // the list so cancelOrder() can erase in O(1) without scanning.
     if (order.side == Side::BUY) {
-        symbol.bids[order.price].push_back(order);
+        auto& level = symbolBook.bids[order.price];
+        level.push_back(order);
+        orderIndex[order.id] = {order.symbol, Side::BUY, order.price, std::prev(level.end())};
+    } else {
+        auto& level = symbolBook.asks[order.price];
+        level.push_back(order);
+        orderIndex[order.id] = {order.symbol, Side::SELL, order.price, std::prev(level.end())};
     }
-    else {
-        symbol.asks[order.price].push_back(order);
-    }
-
-    // Record the order's location so it can be found quickly by ID later
-    orderIndex[order.id] = {order.symbol, order.side};
 }
 
 bool OrderBook::cancelOrder(int id, std::string& outSymbol) {
-    // Use the index to find which symbol and side this order belongs to
-    auto orderIndexEntry = orderIndex.find(id);
-    if (orderIndexEntry == orderIndex.end()) {
-        return false;
-    }
+    auto indexIt = orderIndex.find(id);
+    if (indexIt == orderIndex.end()) return false;
 
+    OrderLocation& loc = indexIt->second;
+    outSymbol = loc.symbol;
 
-    // Extract the symbol and side stored in the index entry
-    std::string symbol = orderIndexEntry->second.first;
-    Side side = orderIndexEntry->second.second;
-    outSymbol = symbol;
+    auto& symBook = books.at(loc.symbol);
 
-    auto& symbolBook = books.at(symbol);
-    bool orderWasRemoved = false;
-
-    // Search a price-level map for the order, remove it, and clean up empty price levels.
-    // Returns true if the order was found and removed.
-    auto removeFromSide = [&](auto& priceMap) {
-        for (auto priceLevelIt = priceMap.begin(); priceLevelIt != priceMap.end(); ++priceLevelIt) {
-            auto& ordersAtThisPrice = priceLevelIt->second;
-
-            for (auto orderIt = ordersAtThisPrice.begin(); orderIt != ordersAtThisPrice.end(); ++orderIt) {
-                if (orderIt->id == id) {
-                    ordersAtThisPrice.erase(orderIt);
-
-                    // Clean up the price level if it's now empty
-                    if (ordersAtThisPrice.empty()) {
-                        priceMap.erase(priceLevelIt);
-                    }
-
-                    return true;
-                }
-            }
-        }
-        return false;
-    };
-
-    if (side == Side::BUY) {
-        orderWasRemoved = removeFromSide(symbolBook.bids);
+    // Jump directly to the order using the stored iterator — no scan needed.
+    if (loc.side == Side::BUY) {
+        auto& level = symBook.bids.at(loc.price);
+        level.erase(loc.it);
+        if (level.empty()) symBook.bids.erase(loc.price);
     } else {
-        orderWasRemoved = removeFromSide(symbolBook.asks);
+        auto& level = symBook.asks.at(loc.price);
+        level.erase(loc.it);
+        if (level.empty()) symBook.asks.erase(loc.price);
     }
 
-    // Remove from the index so it can't be looked up anymore
-    if (orderWasRemoved) {
-        orderIndex.erase(id);
-    }
-
-    return orderWasRemoved;
+    orderIndex.erase(indexIt);
+    return true;
 }
 
 Order* OrderBook::bestBid(const std::string& symbol) {

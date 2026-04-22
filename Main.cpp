@@ -1,10 +1,3 @@
-// --- Standard library headers ---
-// iostream  : std::cout (print to screen), std::cin (read keyboard input)
-// iomanip   : std::fixed and std::setprecision (control how numbers print, e.g. "1.50" not "1.5")
-// string    : std::string (text)
-// sstream   : std::istringstream (treat a string like a stream so we can extract words from it)
-// algorithm : std::transform (used to convert a string to uppercase)
-// cctype    : ::toupper (converts a single character to uppercase)
 #include <iostream>
 #include <iomanip>
 #include <string>
@@ -14,10 +7,9 @@
 #include "MatchingEngine.h"
 
 // Every order the user places gets a unique ID (1, 2, 3, ...).
-// 'static' here means this variable is private to this file — no other file can touch it.
 // Lower ID = placed earlier, which the matching engine uses to break ties when two orders
 // have the same price (this is called "price-time priority").
-static int nextId = 1;
+static long long nextId = 1;
 
 // Converts a string to all uppercase letters.
 // e.g. "aapl" -> "AAPL",  "Buy" -> "BUY"
