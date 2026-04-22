@@ -15,8 +15,9 @@ void MatchingEngine::matchOrders(const std::string& symbol) {
         Order* bid = orderBook.bestBid(symbol); // highest buy order
         Order* ask = orderBook.bestAsk(symbol); // lowest sell order
 
-        // Stop if either side is empty, or the buyer isn't offering enough
-        if (!bid || !ask || bid->price < ask->price) break;
+        // Stop if either side is empty, or the buyer isn't offering enough.
+        // Use epsilon tolerance to treat prices equal within floating-point rounding.
+        if (!bid || !ask || bid->price < ask->price - 1e-9) break;
 
         // The trade size is limited by whichever order has the smaller quantity
         int qty = std::min(bid->quantity, ask->quantity);
@@ -27,14 +28,16 @@ void MatchingEngine::matchOrders(const std::string& symbol) {
         std::cout << "TRADE: " << qty << " " << symbol
                   << " @ " << std::fixed << std::setprecision(2) << tradePrice << "\n";
 
-        // Reduce the quantity on both orders by how much was traded
-        bid->quantity -= qty;
-        ask->quantity -= qty;
+        // Determine fills before any mutation so we don't touch a pointer after removal.
+        bool bidFilled = (bid->quantity == qty);
+        bool askFilled = (ask->quantity == qty);
 
-        // Remove an order from the book if it has been fully filled
-        bool bidFilled = (bid->quantity == 0);
-        bool askFilled = (ask->quantity == 0);
+        // Only update quantity on orders that will remain in the book.
+        if (!bidFilled) bid->quantity -= qty;
+        if (!askFilled) ask->quantity -= qty;
 
+        // Remove fully-filled orders. After each call the corresponding pointer is dangling —
+        // bidFilled/askFilled were captured above so we never dereference them again.
         if (bidFilled) orderBook.removeTopBid(symbol);
         if (askFilled) orderBook.removeTopAsk(symbol);
     }
