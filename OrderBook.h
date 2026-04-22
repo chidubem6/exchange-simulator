@@ -26,11 +26,11 @@ class OrderBook {
         };
 
         std::map<std::string, SymbolBook> books;
-        std::unordered_map<int, OrderLocation> orderIndex; // orderId -> precise location
+        std::unordered_map<long long, OrderLocation> orderIndex; // orderId -> precise location
 
     public:
         void addOrder(const Order& order);
-        bool cancelOrder(int orderId, std::string& outSymbol);
+        bool cancelOrder(long long orderId, std::string& outSymbol);
         void display(const std::string& symbol) const;
         void displayAll() const;
 

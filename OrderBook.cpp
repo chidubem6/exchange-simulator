@@ -18,7 +18,7 @@ void OrderBook::addOrder(const Order& order) {
     }
 }
 
-bool OrderBook::cancelOrder(int id, std::string& outSymbol) {
+bool OrderBook::cancelOrder(long long id, std::string& outSymbol) {
     auto indexIt = orderIndex.find(id);
     if (indexIt == orderIndex.end()) return false;
 

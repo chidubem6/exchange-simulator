@@ -91,7 +91,7 @@ int main() {
         // --- CANCEL <order_id> ---
         // Removes an open order from the book using its numeric ID.
         if (cmd == "CANCEL") {
-            int id;
+            long long id;
             if (!(ss >> id)) {      // try to read an integer after CANCEL
                 std::cout << "Error: CANCEL requires an order ID. Example: CANCEL 3\n";
                 continue;
