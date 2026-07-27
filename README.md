@@ -8,6 +8,7 @@ The project lets you place `BUY` and `SELL` orders, cancel open orders by ID, in
 
 - Limit order book for multiple symbols such as `AAPL` or `TSLA`
 - Price-time priority matching
+- Integer tick-based pricing (exact price maths, no floating-point rounding)
 - Partial fills and full fills
 - Order cancellation by order ID
 - Aggregated book display by price level
@@ -20,6 +21,12 @@ Orders are stored separately as bids and asks for each symbol:
 - Bids are sorted highest price first
 - Asks are sorted lowest price first
 - Orders at the same price are matched in arrival order
+
+Prices are represented internally as integer *ticks* (one tick = 0.01), not
+floating-point numbers. Storing and comparing prices as integers keeps every
+matching decision exact and removes the epsilon tolerances that floating-point
+prices would need. Input such as `185.50` is parsed straight to `18550` ticks;
+prices finer than two decimal places (e.g. `1.234`) are rejected.
 
 When a new order is submitted:
 
@@ -36,6 +43,7 @@ Trade price is determined by the resting order using the project's current time-
 ```text
 main.cpp              Interactive command-line interface
 Order.h               Order model and side enum
+Price.h               Integer tick parsing and formatting (string <-> ticks)
 OrderBook.h/.cpp      Order storage, lookup, cancel, and display logic
 MatchingEngine.h/.cpp Matching and trade execution
 ```
@@ -120,6 +128,7 @@ With the `g++` build:
 - Order IDs are assigned sequentially starting from `1`
 - `BOOK` with no symbol prints every symbol currently in the book
 - Quantities and prices must be positive
+- Prices are held internally as integer ticks (1 tick = 0.01) and accept at most two decimal places
 
 ## Possible Next Steps
 
