@@ -1,10 +1,10 @@
 #include <iostream>
-#include <iomanip>
 #include <string>
 #include <sstream>
 #include <algorithm>
 #include <cctype>
 #include "MatchingEngine.h"
+#include "Price.h"
 
 // Every order the user places gets a unique ID (1, 2, 3, ...).
 // Lower ID = placed earlier, which the matching engine uses to break ties when two orders
@@ -109,32 +109,39 @@ int main() {
         // Creates a new limit order and sends it to the matching engine.
         if (cmd == "BUY" || cmd == "SELL") {
             int qty;
-            std::string symbol, at;     // 'at' will hold the literal "@" token
-            double price;
+            std::string symbol, at, priceStr;   // 'at' will hold the literal "@" token
 
             // Read the remaining tokens from the line: quantity, symbol, "@", price.
             // The condition fails if any token is missing or "@" is not in the right place.
-            if (!(ss >> qty >> symbol >> at >> price) || at != "@") {
+            if (!(ss >> qty >> symbol >> at >> priceStr) || at != "@") {
                 std::cout << "Error: expected format: " << cmd << " <qty> <symbol> @ <price>\n";
                 continue;
             }
 
+            // Convert the price string to integer ticks (no floating point). This
+            // also rejects prices with more than two decimals or stray characters.
+            long long priceTicks;
+            if (!parsePriceToTicks(priceStr, priceTicks)) {
+                std::cout << "Error: invalid price '" << priceStr
+                          << "'. Use up to two decimals, e.g. 185.50\n";
+                continue;
+            }
+
             // Basic validation — reject nonsensical inputs early
-            if (qty <= 0)    { std::cout << "Error: quantity must be positive.\n";  continue; }
-            if (price <= 0.0){ std::cout << "Error: price must be positive.\n";     continue; }
+            if (qty <= 0)        { std::cout << "Error: quantity must be positive.\n"; continue; }
+            if (priceTicks <= 0) { std::cout << "Error: price must be positive.\n";    continue; }
 
             // Build the Order object and fill in all its fields
             Order o;
-            o.id       = nextId++;                              // assign next available ID, then increment
-            o.side     = (cmd == "BUY") ? Side::BUY : Side::SELL;
-            o.symbol   = toUpper(symbol);   // normalize so "aapl" and "AAPL" go to the same book
-            o.price    = price;
-            o.quantity = qty;
+            o.id         = nextId++;                            // assign next available ID, then increment
+            o.side       = (cmd == "BUY") ? Side::BUY : Side::SELL;
+            o.symbol     = toUpper(symbol); // normalize so "aapl" and "AAPL" go to the same book
+            o.priceTicks = priceTicks;
+            o.quantity   = qty;
 
             // Confirm the order to the user, then hand it to the engine
-            // std::fixed + std::setprecision(2) makes the price always print with 2 decimal places
             std::cout << "Order #" << o.id << " accepted: " << cmd << " " << qty
-                      << " " << o.symbol << " @ " << std::fixed << std::setprecision(2) << price << "\n";
+                      << " " << o.symbol << " @ " << formatTicks(priceTicks) << "\n";
             engine.processOrder(o);     // this may immediately print a TRADE if orders match
             continue;
         }

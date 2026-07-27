@@ -13,15 +13,15 @@ class OrderBook {
         // std::list is used instead of std::deque because list iterators remain valid
         // after insertions/deletions elsewhere in the list, letting us cache them in orderIndex.
         struct SymbolBook {
-            std::map<double, std::list<Order>, std::greater<double>> bids; // highest price first
-            std::map<double, std::list<Order>> asks;                       // lowest price first
+            std::map<long long, std::list<Order>, std::greater<long long>> bids; // highest price first
+            std::map<long long, std::list<Order>> asks;                          // lowest price first
         };
 
         // Remembers exactly where an order lives so cancelOrder() can erase it in O(1).
         struct OrderLocation {
             std::string symbol;
             Side side;
-            double price;                  // which price level
+            long long priceTicks;          // which price level (integer ticks)
             std::list<Order>::iterator it; // exact position within that level's list
         };
 

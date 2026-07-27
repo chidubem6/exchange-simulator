@@ -1,6 +1,6 @@
 #include "OrderBook.h"
+#include "Price.h"
 #include <iostream>
-#include <iomanip>
 
 void OrderBook::addOrder(const Order& order) {
     auto& symbolBook = books[order.symbol];
@@ -8,13 +8,13 @@ void OrderBook::addOrder(const Order& order) {
     // Append to the correct side's price level and store a direct iterator into
     // the list so cancelOrder() can erase in O(1) without scanning.
     if (order.side == Side::BUY) {
-        auto& level = symbolBook.bids[order.price];
+        auto& level = symbolBook.bids[order.priceTicks];
         level.push_back(order);
-        orderIndex[order.id] = {order.symbol, Side::BUY, order.price, std::prev(level.end())};
+        orderIndex[order.id] = {order.symbol, Side::BUY, order.priceTicks, std::prev(level.end())};
     } else {
-        auto& level = symbolBook.asks[order.price];
+        auto& level = symbolBook.asks[order.priceTicks];
         level.push_back(order);
-        orderIndex[order.id] = {order.symbol, Side::SELL, order.price, std::prev(level.end())};
+        orderIndex[order.id] = {order.symbol, Side::SELL, order.priceTicks, std::prev(level.end())};
     }
 }
 
@@ -29,13 +29,13 @@ bool OrderBook::cancelOrder(long long id, std::string& outSymbol) {
 
     // Jump directly to the order using the stored iterator — no scan needed.
     if (loc.side == Side::BUY) {
-        auto& level = symBook.bids.at(loc.price);
+        auto& level = symBook.bids.at(loc.priceTicks);
         level.erase(loc.it);
-        if (level.empty()) symBook.bids.erase(loc.price);
+        if (level.empty()) symBook.bids.erase(loc.priceTicks);
     } else {
-        auto& level = symBook.asks.at(loc.price);
+        auto& level = symBook.asks.at(loc.priceTicks);
         level.erase(loc.it);
-        if (level.empty()) symBook.asks.erase(loc.price);
+        if (level.empty()) symBook.asks.erase(loc.priceTicks);
     }
 
     orderIndex.erase(indexIt);
@@ -106,7 +106,7 @@ void OrderBook::display(const std::string& symbol) const {
             int totalQuantity = 0;
             for (const auto& order : priceLevel.second) totalQuantity += order.quantity;
             if (!isFirstEntry) std::cout << ", ";
-            std::cout << std::fixed << std::setprecision(2) << priceLevel.first << " (" << totalQuantity << ")";
+            std::cout << formatTicks(priceLevel.first) << " (" << totalQuantity << ")";
             isFirstEntry = false;
         }
     }
@@ -121,7 +121,7 @@ void OrderBook::display(const std::string& symbol) const {
             int totalQuantity = 0;
             for (const auto& order : priceLevel.second) totalQuantity += order.quantity;
             if (!isFirstEntry) std::cout << ", ";
-            std::cout << std::fixed << std::setprecision(2) << priceLevel.first << " (" << totalQuantity << ")";
+            std::cout << formatTicks(priceLevel.first) << " (" << totalQuantity << ")";
             isFirstEntry = false;
         }
     }

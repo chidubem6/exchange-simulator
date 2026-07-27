@@ -1,6 +1,6 @@
 #include "MatchingEngine.h"
+#include "Price.h"
 #include <iostream>
-#include <iomanip>
 #include <algorithm>
 
 void MatchingEngine::processOrder(const Order& o) {
@@ -16,17 +16,17 @@ void MatchingEngine::matchOrders(const std::string& symbol) {
         Order* ask = orderBook.bestAsk(symbol); // lowest sell order
 
         // Stop if either side is empty, or the buyer isn't offering enough.
-        // Use epsilon tolerance to treat prices equal within floating-point rounding.
-        if (!bid || !ask || bid->price < ask->price - 1e-9) break;
+        // Prices are integer ticks, so this comparison is exact -- no epsilon needed.
+        if (!bid || !ask || bid->priceTicks < ask->priceTicks) break;
 
         // The trade size is limited by whichever order has the smaller quantity
         int qty = std::min(bid->quantity, ask->quantity);
 
-        // Trade at the passive (resting) order's price — the one placed first has the lower ID
-        double tradePrice = (bid->id < ask->id) ? bid->price : ask->price;
+        // Trade at the passive (resting) order's price -- the one placed first has the lower ID
+        long long tradePriceTicks = (bid->id < ask->id) ? bid->priceTicks : ask->priceTicks;
 
         std::cout << "TRADE: " << qty << " " << symbol
-                  << " @ " << std::fixed << std::setprecision(2) << tradePrice << "\n";
+                  << " @ " << formatTicks(tradePriceTicks) << "\n";
 
         // Determine fills before any mutation so we don't touch a pointer after removal.
         bool bidFilled = (bid->quantity == qty);

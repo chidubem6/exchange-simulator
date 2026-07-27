@@ -10,7 +10,7 @@ struct Order {
     long long id;    // unique, monotonically increasing; lower ID = placed earlier (used for price-time priority)
     Side side;       // BUY or SELL
     std::string symbol;  // ticker, e.g. "AAPL"
-    double price;    // limit price the trader is willing to buy/sell at
+    long long priceTicks;  // limit price in integer ticks (see Price.h); 185.50 -> 18550
     int quantity;    // remaining unfilled quantity (decremented as partial fills occur)
 };
 
